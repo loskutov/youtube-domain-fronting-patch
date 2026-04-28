@@ -267,11 +267,6 @@ private fun chooseCronetLibrary(arm64Dir: File): File? {
     }
 }
 
-@Suppress("unused")
-val forceCronetSniPatchShared = forceCronetSniPatch {
-    // No specific compatibility - potentially universal for apps using Cronet
-}
-
 internal fun forceCronetSniPatch(
     name: String = "Force Cronet SNI (arm64)",
     block: ResourcePatchBuilder.() -> Unit,
@@ -279,7 +274,7 @@ internal fun forceCronetSniPatch(
     name = name,
     description = "Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in " +
             "the SSLClientSocket path. URL and HTTP Host remain unchanged.",
-    default = false,
+    default = true,
 ) {
     block()
 
