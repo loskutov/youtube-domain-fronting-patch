@@ -1,8 +1,8 @@
-group = "loskutov"
+group = "sni_patch"
 
 patches {
     about {
-        name = "Loskutov Patches"
+        name = "SNI Patch"
         description = "YouTube patch that allows bypassing DPI restrictions using domain fronting"
         source = "git@github.com:loskutov/morphe-patches.git"
         author = "Ignat Loskutov"
