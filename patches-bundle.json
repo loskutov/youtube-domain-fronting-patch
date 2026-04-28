@@ -1,7 +1,7 @@
 {
-  "created_at": "",
-  "description": "",
-  "download_url": "",
+  "created_at": "2026-04-28T22:08:04",
+  "description": "# 1.0.0 (2026-04-28)\n\n\n### Features\n\n* the actual patch ([cfdfb0a](https://github.com/loskutov/youtube-domain-fronting-patch/commit/cfdfb0ad22f5657986847861fba522983f896713))",
+  "download_url": "https://github.com/loskutov/youtube-domain-fronting-patch/releases/download/v1.0.0/patches-1.0.0.mpp",
   "signature_download_url": "",
-  "version": ""
+  "version": "1.0.0"
 }

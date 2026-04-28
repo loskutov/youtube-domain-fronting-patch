@@ -6,17 +6,47 @@ Template repository for Morphe Patches.
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
+> **[v1.0.0](https://github.com/loskutov/youtube-domain-fronting-patch/releases/tag/v1.0.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
+<details open>
+<summary>📦 YouTube Music&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
+<br>
 
-<!-- Do not modify this section by hand. The patch list is generated when release.yml creates a new release
-     or when update_patches_readme.yml is manually run from the GitHub actions page.
-     
-     If you wish for the patches list to be collapsed, then remove the word 'EXPANDED' from the comment tag above.
+**🎯 Supported versions:**
 
-     If you wish to manually keep this list updated then remove the PATCHES_START and PATCHES_END 
-     comment blocks entirely. -->
+| 🧪&nbsp;7.16.50 | 🧪&nbsp;7.15.52 | 🧪&nbsp;7.14.53 | 7.13.50 | 7.12.51 | 7.11.50 | 7.10.53 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 
-#### A list of your patches will be automatically shown here after your first patches release is created.
-     
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| [Force Cronet SNI (YouTube Music arm64)](#force-cronet-sni-youtube-music-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname |
+
+</details>
+
+<details open>
+<summary>📦 YouTube&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
+<br>
+
+**🎯 Supported versions:**
+
+| 🧪&nbsp;21.16.240 | 🧪&nbsp;21.15.282 | 🧪&nbsp;21.14.482 | 🧪&nbsp;21.05.265 | 20.47.62 | 20.45.36 | 20.31.42 | 20.21.37 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| [Force Cronet SNI (YouTube arm64)](#force-cronet-sni-youtube-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname |
+
+</details>
+
+<details open>
+<summary>🌐 Universal&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
+<br>
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| [Force Cronet SNI (arm64)](#force-cronet-sni-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname |
+
+</details>
+
 <!-- PATCHES_END -->
 
 &nbsp;
