@@ -6,7 +6,7 @@ Allows accessing YouTube on connections where the corresponding domains are bloc
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.0.0](https://github.com/loskutov/youtube-domain-fronting-patch/releases/tag/v1.0.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
+> **[v1.0.1](https://github.com/loskutov/youtube-domain-fronting-patch/releases/tag/v1.0.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
 <details open>
 <summary>📦 YouTube Music&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
 <br>
@@ -34,16 +34,6 @@ Allows accessing YouTube on connections where the corresponding domains are bloc
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Force Cronet SNI (YouTube arm64)](#force-cronet-sni-youtube-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname |
-
-</details>
-
-<details open>
-<summary>🌐 Universal&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
-<br>
-
-| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
-|----------|----------------|-----------|
-| [Force Cronet SNI (arm64)](#force-cronet-sni-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname |
 
 </details>
 

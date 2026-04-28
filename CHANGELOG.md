@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/loskutov/youtube-domain-fronting-patch/compare/v1.0.0...v1.0.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* bump README, enable patches by default ([8569ce0](https://github.com/loskutov/youtube-domain-fronting-patch/commit/8569ce06debb67c522dca9fe70feb7e45a5d07bf))
+
 # 1.0.0 (2026-04-28)
 
 
