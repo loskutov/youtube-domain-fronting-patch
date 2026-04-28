@@ -1,11 +1,11 @@
-group = "app.template"
+group = "loskutov"
 
 patches {
     about {
-        name = "UserXYZ Patches"
-        description = "Patches for apps I like"
-        source = "git@github.com:UserXYZ/morphe-patches.git"
-        author = "Awesome dev"
+        name = "Loskutov Patches"
+        description = "YouTube patch that allows bypassing DPI restrictions using domain fronting"
+        source = "git@github.com:loskutov/morphe-patches.git"
+        author = "Ignat Loskutov"
         contact = "na"
         website = "na"
         license = "GPLv3"
