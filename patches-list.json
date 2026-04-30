@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "patches": [
     {
       "name": "Force Cronet SNI (YouTube Music arm64)",
@@ -71,6 +71,15 @@
           "required": true,
           "type": "kotlin.String",
           "default": "kek.bdn.dev",
+          "values": null
+        },
+        {
+          "key": "ytimgSniHost",
+          "title": "ytimg SNI hostname",
+          "description": "Hostname used as TLS SNI for i.ytimg.com image and thumbnail requests.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "edgestatic.com",
           "values": null
         }
       ]
@@ -151,6 +160,15 @@
           "required": true,
           "type": "kotlin.String",
           "default": "kek.bdn.dev",
+          "values": null
+        },
+        {
+          "key": "ytimgSniHost",
+          "title": "ytimg SNI hostname",
+          "description": "Hostname used as TLS SNI for i.ytimg.com image and thumbnail requests.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "edgestatic.com",
           "values": null
         }
       ]

@@ -6,7 +6,7 @@ Allows accessing YouTube on connections where the corresponding domains are bloc
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.0.1](https://github.com/loskutov/youtube-domain-fronting-patch/releases/tag/v1.0.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
+> **[v1.0.2](https://github.com/loskutov/youtube-domain-fronting-patch/releases/tag/v1.0.2)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
 <details open>
 <summary>📦 YouTube Music&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
 <br>
@@ -18,7 +18,7 @@ Allows accessing YouTube on connections where the corresponding domains are bloc
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Force Cronet SNI (YouTube Music arm64)](#force-cronet-sni-youtube-music-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname |
+| [Force Cronet SNI (YouTube Music arm64)](#force-cronet-sni-youtube-music-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname<br>• ytimg SNI hostname |
 
 </details>
 
@@ -33,7 +33,7 @@ Allows accessing YouTube on connections where the corresponding domains are bloc
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Force Cronet SNI (YouTube arm64)](#force-cronet-sni-youtube-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname |
+| [Force Cronet SNI (YouTube arm64)](#force-cronet-sni-youtube-arm64) | Patches bundled arm64 libcronet so TLS SNI is forced to a configurable hostname in the SSLClientSocket path. URL and HTTP Host remain unchanged. | • Forced SNI hostname<br>• ytimg SNI hostname |
 
 </details>
 

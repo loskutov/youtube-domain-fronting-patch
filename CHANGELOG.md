@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/loskutov/youtube-domain-fronting-patch/compare/v1.0.1...v1.0.2) (2026-04-30)
+
+
+### Bug Fixes
+
+* extend .text instead of rewriting .rodata; rewrite domain for ytimg as well ([08bf336](https://github.com/loskutov/youtube-domain-fronting-patch/commit/08bf3362cf10fdb8270cddfe762f68a83f292b74))
+
 ## [1.0.1](https://github.com/loskutov/youtube-domain-fronting-patch/compare/v1.0.0...v1.0.1) (2026-04-28)
 
 
