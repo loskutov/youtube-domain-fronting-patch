@@ -11,10 +11,63 @@ internal data class ElfLoadSegment(
     val flags: Int,
 )
 
-internal val ElfLoadSegment.isExecutable: Boolean
-    get() = flags and 0x1 != 0
+internal data class ExecutableTrampolineAllocation(
+    val bytes: ByteArray,
+    val trampolineFileOffset: Int,
+    val trampolineVirtualAddress: Long,
+    val grownBytes: Int,
+    val insertedBytes: Int,
+    val loadSegments: List<ElfLoadSegment>,
+)
 
 internal fun parseElfLoadSegments(bytes: ByteArray): List<ElfLoadSegment> {
+    val segments = parseElfProgramHeaders(bytes)
+        .asSequence()
+        .filter { it.type == PT_LOAD && it.fileSize > 0 }
+        .map { header ->
+            ElfLoadSegment(
+                fileOffset = header.fileOffset,
+                fileSize = header.fileSize,
+                virtualAddress = header.virtualAddress,
+                flags = header.flags,
+            )
+        }
+        .toList()
+
+    if (segments.isEmpty()) {
+        throw PatchException("ELF binary does not contain any PT_LOAD segments")
+    }
+
+    return segments
+}
+
+private data class ElfProgramHeader(
+    val index: Int,
+    val entryOffset: Int,
+    val type: Int,
+    val flags: Int,
+    val fileOffset: Long,
+    val virtualAddress: Long,
+    val fileSize: Long,
+    val memorySize: Long,
+    val alignment: Long,
+)
+
+private const val PT_LOAD = 1
+private const val SHT_NOBITS = 8
+
+private fun alignDown(value: Long, alignment: Long): Long {
+    if (alignment <= 1) return value
+    return (value / alignment) * alignment
+}
+
+private fun alignUp(value: Long, alignment: Long): Long {
+    if (alignment <= 1) return value
+    val remainder = value % alignment
+    return if (remainder == 0L) value else value + (alignment - remainder)
+}
+
+private fun parseElfProgramHeaders(bytes: ByteArray): List<ElfProgramHeader> {
     if (bytes.size < 0x40) {
         throw PatchException("Target library is too small to be a valid ELF64 binary")
     }
@@ -35,36 +88,208 @@ internal fun parseElfLoadSegments(bytes: ByteArray): List<ElfLoadSegment> {
         throw PatchException("ELF program header table is missing or malformed")
     }
 
-    val segments = mutableListOf<ElfLoadSegment>()
-    repeat(programHeaderCount) { index ->
-        val entryOffset = programHeaderOffset + index.toLong() * programHeaderEntrySize
-        if (entryOffset < 0 || entryOffset + programHeaderEntrySize > bytes.size.toLong()) {
-            throw PatchException("ELF program header entry $index is out of bounds")
+    return buildList {
+        repeat(programHeaderCount) { index ->
+            val entryOffset = programHeaderOffset + index.toLong() * programHeaderEntrySize
+            if (entryOffset < 0 || entryOffset + programHeaderEntrySize > bytes.size.toLong()) {
+                throw PatchException("ELF program header entry $index is out of bounds")
+            }
+
+            val base = entryOffset.toInt()
+            add(
+                ElfProgramHeader(
+                    index = index,
+                    entryOffset = base,
+                    type = bb.getInt(base),
+                    flags = bb.getInt(base + 0x04),
+                    fileOffset = bb.getLong(base + 0x08),
+                    virtualAddress = bb.getLong(base + 0x10),
+                    fileSize = bb.getLong(base + 0x20),
+                    memorySize = bb.getLong(base + 0x28),
+                    alignment = bb.getLong(base + 0x30),
+                )
+            )
+        }
+    }
+}
+
+internal fun allocateExecutableTrampolineSpace(
+    originalBytes: ByteArray,
+    anchorFileOffset: Int,
+    minimumSize: Int,
+): ExecutableTrampolineAllocation {
+    if (minimumSize <= 0) {
+        throw PatchException("Requested trampoline size must be positive")
+    }
+
+    val headers = parseElfProgramHeaders(originalBytes)
+    val loadHeaders = headers.filter { it.type == PT_LOAD }
+    if (loadHeaders.isEmpty()) {
+        throw PatchException("ELF binary does not contain any PT_LOAD segments")
+    }
+
+    val executableHeader = loadHeaders.firstOrNull { header ->
+        header.flags and 0x1 != 0 &&
+                anchorFileOffset.toLong() >= header.fileOffset &&
+                anchorFileOffset.toLong() < header.fileOffset + header.fileSize
+    } ?: throw PatchException("Could not find executable PT_LOAD segment containing patch site")
+
+    val nextLoadHeader = loadHeaders
+        .filter { it.virtualAddress > executableHeader.virtualAddress }
+        .minByOrNull { it.virtualAddress }
+
+    val executableAlignment = executableHeader.alignment.takeIf { it > 1 } ?: 0x1000L
+    val executableFileEnd = executableHeader.fileOffset + executableHeader.fileSize
+    if (executableFileEnd > originalBytes.size.toLong()) {
+        throw PatchException("Executable PT_LOAD segment extends past end of file")
+    }
+    if (executableHeader.memorySize < executableHeader.fileSize) {
+        throw PatchException("Executable PT_LOAD memory size is smaller than file size")
+    }
+
+    val executableMemoryEnd = executableHeader.virtualAddress + executableHeader.memorySize
+
+    val maxExecutableVirtualEnd = nextLoadHeader?.let { alignDown(it.virtualAddress, executableAlignment) }
+        ?: alignUp(executableMemoryEnd + minimumSize, executableAlignment)
+
+    val requestedGrowth = alignUp(minimumSize.toLong(), Int.SIZE_BYTES.toLong())
+    val maxGrowth = maxExecutableVirtualEnd - executableMemoryEnd
+    if (maxGrowth < requestedGrowth) {
+        throw PatchException(
+            "Not enough executable virtual space to place trampoline payload. " +
+                    "Need 0x${requestedGrowth.toString(16)}, available 0x${maxGrowth.toString(16)}"
+        )
+    }
+
+    val executableMemoryTailBytes = executableHeader.memorySize - executableHeader.fileSize
+    val fileGrowth = executableMemoryTailBytes + requestedGrowth
+    if (fileGrowth > Int.MAX_VALUE) {
+        throw PatchException("Requested executable segment file growth is too large")
+    }
+    if (executableFileEnd + executableMemoryTailBytes > Int.MAX_VALUE) {
+        throw PatchException("Requested trampoline file offset is too large")
+    }
+
+    val insertPoint = executableFileEnd.toInt()
+    val grownBytes = fileGrowth.toInt()
+    val trampolineFileOffset = (executableFileEnd + executableMemoryTailBytes).toInt()
+
+    val bb = ByteBuffer.wrap(originalBytes).order(ByteOrder.LITTLE_ENDIAN)
+    val sectionHeaderOffset = bb.getLong(0x28)
+    val sectionHeaderEntrySize = bb.getShort(0x3A).toInt() and 0xffff
+    val sectionHeaderCount = bb.getShort(0x3C).toInt() and 0xffff
+
+    var nextDataOffset = originalBytes.size.toLong()
+    headers.forEach { header ->
+        if (header.fileSize > 0 && header.fileOffset >= executableFileEnd) {
+            nextDataOffset = minOf(nextDataOffset, header.fileOffset)
+        }
+    }
+
+    if (sectionHeaderOffset > 0 && sectionHeaderEntrySize > 0 && sectionHeaderCount > 0) {
+        if (sectionHeaderOffset >= executableFileEnd) {
+            nextDataOffset = minOf(nextDataOffset, sectionHeaderOffset)
         }
 
-        val base = entryOffset.toInt()
-        val type = bb.getInt(base)
-        if (type != 1) return@repeat
+        repeat(sectionHeaderCount) { index ->
+            val entryOffset = sectionHeaderOffset + index.toLong() * sectionHeaderEntrySize
+            if (entryOffset < 0 || entryOffset + sectionHeaderEntrySize > originalBytes.size.toLong()) {
+                throw PatchException("ELF section header entry $index is out of bounds")
+            }
 
-        val flags = bb.getInt(base + 0x04)
-        val fileOffset = bb.getLong(base + 0x08)
-        val virtualAddress = bb.getLong(base + 0x10)
-        val fileSize = bb.getLong(base + 0x20)
-        if (fileSize > 0) {
-            segments += ElfLoadSegment(
-                fileOffset = fileOffset,
-                fileSize = fileSize,
-                virtualAddress = virtualAddress,
-                flags = flags,
+            val base = entryOffset.toInt()
+            val type = bb.getInt(base + 0x04)
+            val offset = bb.getLong(base + 0x18)
+            if (type != SHT_NOBITS && offset >= executableFileEnd && offset != 0L) {
+                nextDataOffset = minOf(nextDataOffset, offset)
+            }
+        }
+    }
+
+    val availableGap = (nextDataOffset - executableFileEnd).coerceAtLeast(0)
+    val additionalSpaceNeeded = (grownBytes.toLong() - availableGap).coerceAtLeast(0)
+
+    val shiftedHeaders = headers.filter { header ->
+        header.fileOffset >= executableFileEnd && header.fileSize > 0
+    }
+    val offsetShiftAlignment = shiftedHeaders
+        .map { it.alignment }
+        .filter { it > 1 }
+        .maxOrNull()
+        ?.coerceAtLeast(1L)
+        ?: 1L
+
+    val insertedBytes = if (additionalSpaceNeeded == 0L) {
+        0
+    } else {
+        alignUp(additionalSpaceNeeded, offsetShiftAlignment).toInt()
+    }
+
+    val bytes = if (insertedBytes == 0) {
+        originalBytes.copyOf()
+    } else {
+        ByteArray(originalBytes.size + insertedBytes).also { newBytes ->
+            originalBytes.copyInto(newBytes, endIndex = insertPoint)
+            originalBytes.copyInto(
+                newBytes,
+                destinationOffset = insertPoint + insertedBytes,
+                startIndex = insertPoint,
             )
         }
     }
 
-    if (segments.isEmpty()) {
-        throw PatchException("ELF binary does not contain any PT_LOAD segments")
+    val newBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+    val reparsedHeaders = parseElfProgramHeaders(bytes)
+    reparsedHeaders.forEach { header ->
+        val base = header.entryOffset
+        if (insertedBytes > 0 && header.fileOffset >= executableFileEnd && header.fileSize > 0) {
+            newBuffer.putLong(base + 0x08, header.fileOffset + insertedBytes)
+        }
+
+        if (header.index == executableHeader.index) {
+            newBuffer.putLong(base + 0x20, executableHeader.fileSize + grownBytes)
+            newBuffer.putLong(base + 0x28, executableHeader.memorySize + requestedGrowth)
+        }
     }
 
-    return segments
+    if (sectionHeaderOffset > 0 && sectionHeaderEntrySize > 0 && sectionHeaderCount > 0) {
+        val updatedSectionHeaderOffset = if (insertedBytes > 0 && sectionHeaderOffset >= executableFileEnd) {
+            sectionHeaderOffset + insertedBytes
+        } else {
+            sectionHeaderOffset
+        }
+        if (updatedSectionHeaderOffset != sectionHeaderOffset) {
+            newBuffer.putLong(0x28, updatedSectionHeaderOffset)
+        }
+
+        repeat(sectionHeaderCount) { index ->
+            val entryOffset = updatedSectionHeaderOffset + index.toLong() * sectionHeaderEntrySize
+            if (entryOffset < 0 || entryOffset + sectionHeaderEntrySize > bytes.size.toLong()) {
+                throw PatchException("ELF section header entry $index is out of bounds after relayout")
+            }
+
+            val base = entryOffset.toInt()
+            val type = newBuffer.getInt(base + 0x04)
+            val offset = newBuffer.getLong(base + 0x18)
+            if (insertedBytes > 0 && type != SHT_NOBITS && offset >= executableFileEnd && offset != 0L) {
+                newBuffer.putLong(base + 0x18, offset + insertedBytes)
+            }
+        }
+    }
+
+    bytes.fill(0, fromIndex = insertPoint, toIndex = insertPoint + grownBytes)
+
+    val loadSegments = parseElfLoadSegments(bytes)
+    val trampolineVirtualAddress = fileOffsetToVirtualAddress(trampolineFileOffset, loadSegments)
+
+    return ExecutableTrampolineAllocation(
+        bytes = bytes,
+        trampolineFileOffset = trampolineFileOffset,
+        trampolineVirtualAddress = trampolineVirtualAddress,
+        grownBytes = grownBytes,
+        insertedBytes = insertedBytes,
+        loadSegments = loadSegments,
+    )
 }
 
 internal fun fileOffsetToVirtualAddress(
